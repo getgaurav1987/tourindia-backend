@@ -1,5 +1,6 @@
 const http = require('http');
 const https = require('https');
+const crypto = require('crypto');
 
 const PORT = process.env.PORT || 3001;
 
@@ -119,6 +120,67 @@ const server = http.createServer((req, res) => {
         method: 'POST',
         headers: {'Content-Type':'application/json','Content-Length':Buffer.byteLength(body)}
       }, body, res);
+    }
+
+    else if (req.url === '/api/razorpay-order') {
+      var rzKeyId = process.env.RAZORPAY_KEY_ID || 'rzp_test_T51oAAOB5yBJOe';
+      var rzKeySecret = process.env.RAZORPAY_KEY_SECRET || '';
+      if (!rzKeySecret) {
+        res.writeHead(200, {'Content-Type':'application/json','Access-Control-Allow-Origin':'*'});
+        res.end(JSON.stringify({error:'Razorpay secret not configured on server. Add RAZORPAY_KEY_SECRET in Render environment.'}));
+        return;
+      }
+      var amountRupees = parseFloat(parsed.amount) || 0;
+      if (amountRupees <= 0) {
+        res.writeHead(200, {'Content-Type':'application/json','Access-Control-Allow-Origin':'*'});
+        res.end(JSON.stringify({error:'Invalid amount'}));
+        return;
+      }
+      var orderBody = JSON.stringify({
+        amount: Math.round(amountRupees * 100),
+        currency: 'INR',
+        receipt: 'wallet_' + Date.now()
+      });
+      var rzAuth = Buffer.from(rzKeyId + ':' + rzKeySecret).toString('base64');
+      var rzReq = https.request({
+        hostname: 'api.razorpay.com',
+        path: '/v1/orders',
+        method: 'POST',
+        headers: {
+          'Content-Type':'application/json',
+          'Authorization':'Basic ' + rzAuth,
+          'Content-Length': Buffer.byteLength(orderBody)
+        }
+      }, function(rzRes){
+        var d = '';
+        rzRes.on('data', function(c){ d += c; });
+        rzRes.on('end', function(){
+          res.writeHead(200, {'Content-Type':'application/json','Access-Control-Allow-Origin':'*'});
+          res.end(d);
+        });
+      });
+      rzReq.on('error', function(e){
+        res.writeHead(200, {'Content-Type':'application/json','Access-Control-Allow-Origin':'*'});
+        res.end(JSON.stringify({error:e.message}));
+      });
+      rzReq.setTimeout(30000, function(){
+        rzReq.destroy();
+        res.writeHead(200, {'Content-Type':'application/json','Access-Control-Allow-Origin':'*'});
+        res.end(JSON.stringify({error:'Razorpay timeout'}));
+      });
+      rzReq.write(orderBody);
+      rzReq.end();
+    }
+
+    else if (req.url === '/api/razorpay-verify') {
+      var vSecret = process.env.RAZORPAY_KEY_SECRET || '';
+      var oid = parsed.razorpay_order_id || '';
+      var pid = parsed.razorpay_payment_id || '';
+      var sig = parsed.razorpay_signature || '';
+      var expected = crypto.createHmac('sha256', vSecret).update(oid + '|' + pid).digest('hex');
+      var valid = (vSecret && expected === sig);
+      res.writeHead(200, {'Content-Type':'application/json','Access-Control-Allow-Origin':'*'});
+      res.end(JSON.stringify({valid: valid, paymentId: pid, orderId: oid}));
     }
 
     else {
