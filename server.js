@@ -20,7 +20,7 @@ function proxyRequest(options, body, res) {
     res.writeHead(200, {'Content-Type':'application/json','Access-Control-Allow-Origin':'*'});
     res.end(JSON.stringify({Status:2, Error:{ErrorMessage: e.message}}));
   });
-  req.setTimeout(15000, () => {
+  req.setTimeout(90000, () => {
     req.destroy();
     res.writeHead(200, {'Content-Type':'application/json','Access-Control-Allow-Origin':'*'});
     res.end(JSON.stringify({Status:2, Error:{ErrorMessage:'Timeout'}}));
