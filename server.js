@@ -94,6 +94,15 @@ const server = http.createServer((req, res) => {
       }, body, res);
     }
 
+    else if (req.url === '/api/tbo-ticket') {
+      proxyRequest({
+        hostname: 'api.tektravels.com',
+        path: '/BookingEngineService_Air/AirService.svc/rest/Ticket',
+        method: 'POST',
+        headers: {'Content-Type':'application/json','Content-Length':Buffer.byteLength(body)}
+      }, body, res);
+    }
+
     else if (req.url === '/api/tbo-hotels') {
       proxyRequest({
         hostname: 'api.tbotechnology.in',
