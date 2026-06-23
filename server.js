@@ -113,10 +113,19 @@ const server = http.createServer((req, res) => {
       }, body, res);
     }
 
-    else if (req.url === '/api/tbo-hotels') {
+    else if (req.url === '/api/tbo-hotel-cities') {
       proxyRequest({
-        hostname: 'api.tbotechnology.in',
-        path: '/hotelapi_v7/hotelservice.svc/Search',
+        hostname: 'api.tektravels.com',
+        path: '/SharedServices/SharedData.svc/rest/GetDestinationSearchStaticData',
+        method: 'POST',
+        headers: {'Content-Type':'application/json','Content-Length':Buffer.byteLength(body)}
+      }, body, res);
+    }
+
+    else if (req.url === '/api/tbo-hotel-search') {
+      proxyRequest({
+        hostname: 'api.tektravels.com',
+        path: '/BookingEngineService_Hotel/hotelservice.svc/rest/GetHotelResult',
         method: 'POST',
         headers: {'Content-Type':'application/json','Content-Length':Buffer.byteLength(body)}
       }, body, res);
