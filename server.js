@@ -86,6 +86,15 @@ const server = http.createServer((req, res) => {
       }, body, res);
     }
 
+    else if (req.url === '/api/tbo-farerule') {
+      proxyRequest({
+        hostname: 'api.tektravels.com',
+        path: '/BookingEngineService_Air/AirService.svc/rest/FareRule',
+        method: 'POST',
+        headers: {'Content-Type':'application/json','Content-Length':Buffer.byteLength(body)}
+      }, body, res);
+    }
+
     else if (req.url === '/api/tbo-book') {
       proxyRequest({
         hostname: 'api.tektravels.com',
