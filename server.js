@@ -113,6 +113,15 @@ const server = http.createServer((req, res) => {
       }, body, res);
     }
 
+    else if (req.url === '/api/tbo-ssr') {
+      proxyRequest({
+        hostname: 'api.tektravels.com',
+        path: '/BookingEngineService_Air/AirService.svc/rest/SSR',
+        method: 'POST',
+        headers: {'Content-Type':'application/json','Content-Length':Buffer.byteLength(body)}
+      }, body, res);
+    }
+
     else if (req.url === '/api/tbo-getbookingdetails') {
       proxyRequest({
         hostname: 'api.tektravels.com',
