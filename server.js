@@ -4,7 +4,7 @@ const crypto = require('crypto');
 
 const PORT = process.env.PORT || 3001;
 
-function proxyRequest(options, body, res) {
+function proxyRequest(options, body, res, timeoutMs) {
   const req = http.request(options, (r) => {
     let data = '';
     r.on('data', (c) => data += c);
@@ -21,7 +21,7 @@ function proxyRequest(options, body, res) {
     res.writeHead(200, {'Content-Type':'application/json','Access-Control-Allow-Origin':'*'});
     res.end(JSON.stringify({Status:2, Error:{ErrorMessage: e.message}}));
   });
-  req.setTimeout(90000, () => {
+  req.setTimeout(timeoutMs || 90000, () => {
     req.destroy();
     res.writeHead(200, {'Content-Type':'application/json','Access-Control-Allow-Origin':'*'});
     res.end(JSON.stringify({Status:2, Error:{ErrorMessage:'Timeout'}}));
@@ -98,19 +98,19 @@ const server = http.createServer((req, res) => {
     else if (req.url === '/api/tbo-book') {
       proxyRequest({
         hostname: 'api.tektravels.com',
-        path: '/BookingEngineService_Air/AirService.svc/rest/Book',
+        path: '/BookingEngineService_AirBook/AirService.svc/rest/Book',
         method: 'POST',
         headers: {'Content-Type':'application/json','Content-Length':Buffer.byteLength(body)}
-      }, body, res);
+      }, body, res, 300000);
     }
 
     else if (req.url === '/api/tbo-ticket') {
       proxyRequest({
         hostname: 'api.tektravels.com',
-        path: '/BookingEngineService_Air/AirService.svc/rest/Ticket',
+        path: '/BookingEngineService_AirBook/AirService.svc/rest/Ticket',
         method: 'POST',
         headers: {'Content-Type':'application/json','Content-Length':Buffer.byteLength(body)}
-      }, body, res);
+      }, body, res, 300000);
     }
 
     else if (req.url === '/api/tbo-ssr') {
@@ -125,10 +125,10 @@ const server = http.createServer((req, res) => {
     else if (req.url === '/api/tbo-getbookingdetails') {
       proxyRequest({
         hostname: 'api.tektravels.com',
-        path: '/BookingEngineService_Air/AirService.svc/rest/GetBookingDetails',
+        path: '/BookingEngineService_AirBook/AirService.svc/rest/GetBookingDetails',
         method: 'POST',
         headers: {'Content-Type':'application/json','Content-Length':Buffer.byteLength(body)}
-      }, body, res);
+      }, body, res, 300000);
     }
 
     else if (req.url === '/api/tbo-hotel-cities') {
