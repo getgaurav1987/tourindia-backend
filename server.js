@@ -122,6 +122,61 @@ const server = http.createServer((req, res) => {
       }, body, res);
     }
 
+    else if (req.url === '/api/passport-ocr') {
+      var gKey = process.env.GEMINI_API_KEY || '';
+      if (!gKey) {
+        res.writeHead(200, {'Content-Type':'application/json','Access-Control-Allow-Origin':'*'});
+        res.end(JSON.stringify({error:'GEMINI_API_KEY not configured on server. Add it in the Render environment for tourindia-backend.'}));
+        return;
+      }
+      var imgData = parsed.image || '';
+      var mimeType = parsed.mimeType || 'image/jpeg';
+      if (!imgData) {
+        res.writeHead(200, {'Content-Type':'application/json','Access-Control-Allow-Origin':'*'});
+        res.end(JSON.stringify({error:'No image received'}));
+        return;
+      }
+      var prompt = 'You are a passport data extractor. Read this passport image and, when present, use the machine-readable zone (the two lines of characters at the bottom) for accuracy. Return ONLY a JSON object (no markdown, no explanation) with exactly these keys: Title (one of Mr, Mrs, Ms, Mstr, Miss - infer from sex and age, default Mr), FirstName (given names as printed), LastName (surname as printed), Gender (single letter M or F), DateOfBirth (YYYY-MM-DD), Nationality (2-letter ISO country code), PassportNumber, PassportExpiry (YYYY-MM-DD), PassportIssueCountry (2-letter ISO country code). If any field is unreadable, use an empty string.';
+      var gBody = JSON.stringify({
+        contents: [{ parts: [ {text: prompt}, {inline_data: {mime_type: mimeType, data: imgData}} ] }],
+        generationConfig: { temperature: 0, responseMimeType: 'application/json' }
+      });
+      var gReq = https.request({
+        hostname: 'generativelanguage.googleapis.com',
+        path: '/v1beta/models/gemini-2.5-flash:generateContent?key=' + gKey,
+        method: 'POST',
+        headers: {'Content-Type':'application/json','Content-Length':Buffer.byteLength(gBody)}
+      }, function(gRes){
+        var d = '';
+        gRes.on('data', function(c){ d += c; });
+        gRes.on('end', function(){
+          res.writeHead(200, {'Content-Type':'application/json','Access-Control-Allow-Origin':'*'});
+          try {
+            var j = JSON.parse(d);
+            var txt = (j.candidates && j.candidates[0] && j.candidates[0].content && j.candidates[0].content.parts && j.candidates[0].content.parts[0] && j.candidates[0].content.parts[0].text) || '';
+            txt = txt.replace(/```json/g,'').replace(/```/g,'').trim();
+            var fields = {};
+            try { fields = JSON.parse(txt); } catch(e2) { fields = {}; }
+            if (j.error) { res.end(JSON.stringify({error: (j.error.message || 'Gemini error')})); return; }
+            res.end(JSON.stringify({ok:true, fields: fields}));
+          } catch(e) {
+            res.end(JSON.stringify({error:'Parse error', raw: String(d).substring(0,300)}));
+          }
+        });
+      });
+      gReq.on('error', function(e){
+        res.writeHead(200, {'Content-Type':'application/json','Access-Control-Allow-Origin':'*'});
+        res.end(JSON.stringify({error:e.message}));
+      });
+      gReq.setTimeout(45000, function(){
+        gReq.destroy();
+        res.writeHead(200, {'Content-Type':'application/json','Access-Control-Allow-Origin':'*'});
+        res.end(JSON.stringify({error:'OCR timeout'}));
+      });
+      gReq.write(gBody);
+      gReq.end();
+    }
+
     else if (req.url === '/api/tbo-getbookingdetails') {
       proxyRequest({
         hostname: 'api.tektravels.com',
