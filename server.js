@@ -1,10 +1,22 @@
 const http = require('http');
 const https = require('https');
 const crypto = require('crypto');
+const HttpProxyAgent = require('http-proxy-agent').HttpProxyAgent;
 
 const PORT = process.env.PORT || 3001;
 
+// TBO certification: route ONLY TBO outbound calls through the Fixie proxy so they
+// exit from a fixed, whitelisted IP. Read the proxy from FIXIE_URL (never hardcoded).
+// If FIXIE_URL is not set, TBO calls fall back to going direct so local dev still works.
+const FIXIE_URL = process.env.FIXIE_URL || '';
+const tboProxyAgent = FIXIE_URL ? new HttpProxyAgent(FIXIE_URL) : null;
+if (!tboProxyAgent) {
+  console.warn('[TBO] FIXIE_URL not set - TBO API calls will go DIRECT (no fixed outbound IP). Set FIXIE_URL to route TBO through the Fixie proxy.');
+}
+
 function proxyRequest(options, body, res, timeoutMs) {
+  // Route TBO calls through the Fixie proxy when configured; otherwise go direct.
+  if (tboProxyAgent) options.agent = tboProxyAgent;
   const req = http.request(options, (r) => {
     let data = '';
     r.on('data', (c) => data += c);
@@ -54,10 +66,17 @@ const server = http.createServer((req, res) => {
     try { parsed = JSON.parse(body || '{}'); } catch(e) {}
 
     if (req.url === '/api/tbo-auth') {
+      var tboUser = parsed.UserName || process.env.TBO_USERNAME;
+      var tboPass = parsed.Password || process.env.TBO_PASSWORD;
+      if (!tboUser || !tboPass) {
+        res.writeHead(500, {'Content-Type':'application/json','Access-Control-Allow-Origin':'*'});
+        res.end(JSON.stringify({error:'TBO credentials not configured on server. Set TBO_USERNAME and TBO_PASSWORD in the Render environment for tourindia-backend.'}));
+        return;
+      }
       const payload = JSON.stringify({
         ClientId: 'ApiIntegrationNew',
-        UserName: parsed.UserName || process.env.TBO_USERNAME || 'TourI',
-        Password: parsed.Password || process.env.TBO_PASSWORD || 'TourI@123',
+        UserName: tboUser,
+        Password: tboPass,
         EndUserIp: '103.24.81.1'
       });
       proxyRequest({
@@ -205,11 +224,11 @@ const server = http.createServer((req, res) => {
     }
 
     else if (req.url === '/api/razorpay-order') {
-      var rzKeyId = process.env.RAZORPAY_KEY_ID || 'rzp_test_T51oAAOB5yBJOe';
-      var rzKeySecret = process.env.RAZORPAY_KEY_SECRET || '';
-      if (!rzKeySecret) {
-        res.writeHead(200, {'Content-Type':'application/json','Access-Control-Allow-Origin':'*'});
-        res.end(JSON.stringify({error:'Razorpay secret not configured on server. Add RAZORPAY_KEY_SECRET in Render environment.'}));
+      var rzKeyId = process.env.RAZORPAY_KEY_ID;
+      var rzKeySecret = process.env.RAZORPAY_KEY_SECRET;
+      if (!rzKeyId || !rzKeySecret) {
+        res.writeHead(500, {'Content-Type':'application/json','Access-Control-Allow-Origin':'*'});
+        res.end(JSON.stringify({error:'Razorpay not configured on server. Set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in the Render environment.'}));
         return;
       }
       var amountRupees = parseFloat(parsed.amount) || 0;
