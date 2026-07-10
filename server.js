@@ -74,14 +74,14 @@ const server = http.createServer((req, res) => {
         return;
       }
       const payload = JSON.stringify({
-        ClientId: 'ApiIntegrationNew',
+        ClientId: process.env.TBO_CLIENT_ID || 'tboprod',
         UserName: tboUser,
         Password: tboPass,
         EndUserIp: '103.24.81.1'
       });
       proxyRequest({
-        hostname: 'Sharedapi.tektravels.com',
-        path: '/SharedData.svc/rest/Authenticate',
+        hostname: 'api.travelboutiqueonline.com',
+        path: '/SharedAPI/SharedData.svc/rest/Authenticate',
         method: 'POST',
         headers: {'Content-Type':'application/json','Content-Length':Buffer.byteLength(payload)}
       }, payload, res);
@@ -89,8 +89,8 @@ const server = http.createServer((req, res) => {
 
     else if (req.url === '/api/tbo-flights') {
       proxyRequest({
-        hostname: 'api.tektravels.com',
-        path: '/BookingEngineService_Air/AirService.svc/rest/Search',
+        hostname: 'tboapi.travelboutiqueonline.com',
+        path: '/AirAPI_V10/AirService.svc/rest/Search',
         method: 'POST',
         headers: {'Content-Type':'application/json','Content-Length':Buffer.byteLength(body)}
       }, body, res);
@@ -98,8 +98,8 @@ const server = http.createServer((req, res) => {
 
     else if (req.url === '/api/tbo-farequote') {
       proxyRequest({
-        hostname: 'api.tektravels.com',
-        path: '/BookingEngineService_Air/AirService.svc/rest/FareQuote',
+        hostname: 'tboapi.travelboutiqueonline.com',
+        path: '/AirAPI_V10/AirService.svc/rest/FareQuote',
         method: 'POST',
         headers: {'Content-Type':'application/json','Content-Length':Buffer.byteLength(body)}
       }, body, res);
@@ -107,8 +107,8 @@ const server = http.createServer((req, res) => {
 
     else if (req.url === '/api/tbo-farerule') {
       proxyRequest({
-        hostname: 'api.tektravels.com',
-        path: '/BookingEngineService_Air/AirService.svc/rest/FareRule',
+        hostname: 'tboapi.travelboutiqueonline.com',
+        path: '/AirAPI_V10/AirService.svc/rest/FareRule',
         method: 'POST',
         headers: {'Content-Type':'application/json','Content-Length':Buffer.byteLength(body)}
       }, body, res);
@@ -116,8 +116,8 @@ const server = http.createServer((req, res) => {
 
     else if (req.url === '/api/tbo-book') {
       proxyRequest({
-        hostname: 'api.tektravels.com',
-        path: '/BookingEngineService_Air/AirService.svc/rest/Book',
+        hostname: 'booking.travelboutiqueonline.com',
+        path: '/AirAPI_V10/AirService.svc/rest/Book',
         method: 'POST',
         headers: {'Content-Type':'application/json','Content-Length':Buffer.byteLength(body)}
       }, body, res, 300000);
@@ -125,8 +125,8 @@ const server = http.createServer((req, res) => {
 
     else if (req.url === '/api/tbo-ticket') {
       proxyRequest({
-        hostname: 'api.tektravels.com',
-        path: '/BookingEngineService_Air/AirService.svc/rest/Ticket',
+        hostname: 'booking.travelboutiqueonline.com',
+        path: '/AirAPI_V10/AirService.svc/rest/Ticket',
         method: 'POST',
         headers: {'Content-Type':'application/json','Content-Length':Buffer.byteLength(body)}
       }, body, res, 300000);
@@ -134,8 +134,8 @@ const server = http.createServer((req, res) => {
 
     else if (req.url === '/api/tbo-ssr') {
       proxyRequest({
-        hostname: 'api.tektravels.com',
-        path: '/BookingEngineService_Air/AirService.svc/rest/SSR',
+        hostname: 'tboapi.travelboutiqueonline.com',
+        path: '/AirAPI_V10/AirService.svc/rest/SSR',
         method: 'POST',
         headers: {'Content-Type':'application/json','Content-Length':Buffer.byteLength(body)}
       }, body, res);
@@ -198,8 +198,8 @@ const server = http.createServer((req, res) => {
 
     else if (req.url === '/api/tbo-getbookingdetails') {
       proxyRequest({
-        hostname: 'api.tektravels.com',
-        path: '/BookingEngineService_Air/AirService.svc/rest/GetBookingDetails',
+        hostname: 'booking.travelboutiqueonline.com',
+        path: '/AirAPI_V10/AirService.svc/rest/GetBookingDetails',
         method: 'POST',
         headers: {'Content-Type':'application/json','Content-Length':Buffer.byteLength(body)}
       }, body, res, 300000);
