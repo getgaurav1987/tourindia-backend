@@ -1,7 +1,7 @@
 const http = require('http');
 const https = require('https');
 const crypto = require('crypto');
-const HttpProxyAgent = require('http-proxy-agent').HttpProxyAgent;
+const HttpsProxyAgent = require('https-proxy-agent').HttpsProxyAgent;
 
 const PORT = process.env.PORT || 3001;
 
@@ -9,15 +9,17 @@ const PORT = process.env.PORT || 3001;
 // exit from a fixed, whitelisted IP. Read the proxy from FIXIE_URL (never hardcoded).
 // If FIXIE_URL is not set, TBO calls fall back to going direct so local dev still works.
 const FIXIE_URL = process.env.FIXIE_URL || '';
-const tboProxyAgent = FIXIE_URL ? new HttpProxyAgent(FIXIE_URL) : null;
+const tboProxyAgent = FIXIE_URL ? new HttpsProxyAgent(FIXIE_URL) : null;
 if (!tboProxyAgent) {
   console.warn('[TBO] FIXIE_URL not set - TBO API calls will go DIRECT (no fixed outbound IP). Set FIXIE_URL to route TBO through the Fixie proxy.');
 }
 
 function proxyRequest(options, body, res, timeoutMs) {
   // Route TBO calls through the Fixie proxy when configured; otherwise go direct.
+  // Uses HTTPS end-to-end (TLS tunnelled through the proxy via CONNECT) so live
+  // TBO credentials are never sent in cleartext on the proxy->TBO leg.
   if (tboProxyAgent) options.agent = tboProxyAgent;
-  const req = http.request(options, (r) => {
+  const req = https.request(options, (r) => {
     let data = '';
     r.on('data', (c) => data += c);
     r.on('end', () => {
